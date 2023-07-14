@@ -13,6 +13,7 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+// =============== Mongo DB ==================
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ufrxsge.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -31,6 +32,30 @@ async function run() {
         const roomsCollection = client.db('aircncDb').collection('rooms')
         const bookingsCollection = client.db('aircncDb').collection('bookings')
 
+
+        // save user email and role in DB
+        app.put('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const query = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user
+            }
+            const result = await usersCollection.updateOne(query, updateDoc, options)
+            console.log(result)
+            res.send(result)
+        })
+
+
+
+
+
+
+
+
+
+
         // Send a ping to confirm a successful connection
         await client.db('admin').command({ ping: 1 })
         console.log(
@@ -42,6 +67,8 @@ async function run() {
     }
 }
 run().catch(console.dir)
+
+// =============== Mongo DB ==================
 
 app.get('/', (req, res) => {
     res.send('AirCNC Server is running..')
