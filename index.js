@@ -78,10 +78,10 @@ async function run() {
         })
 
         // update bookings room status
-        app.patch('/room/status/:id', async (req, res)=> {
+        app.patch('/room/status/:id', async (req, res) => {
             const id = req.params.id;
             const status = req.body.status;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     booked: status,
@@ -99,7 +99,24 @@ async function run() {
             res.send(result);
         })
 
+        // get bookings for specific user by email
+        app.get('/bookings', async (req, res) => {
+            const email = req.query.email;
+            if (!email) {
+                res.send([])
+            }
+            const query = { 'guest.email': email }
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result);
+        })
 
+        // delete a booking
+        app.delete('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await bookingsCollection.deleteOne(query);
+            res.send(result);
+        })
 
 
 
