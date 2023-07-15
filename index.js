@@ -58,7 +58,7 @@ async function run() {
         // save room in MongoDB
         app.post('/rooms', async (req, res) => {
             const room = req.body;
-            console.log(room);
+            // console.log(room);
             const result = await roomsCollection.insertOne(room);
             res.send(result);
         })
@@ -77,6 +77,27 @@ async function run() {
             res.send(result);
         })
 
+        // update bookings room status
+        app.patch('/room/status/:id', async (req, res)=> {
+            const id = req.params.id;
+            const status = req.body.status;
+            const query = {_id: new ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    booked: status,
+                },
+            }
+            const update = await roomsCollection.updateOne(query, updateDoc);
+            res.send(update)
+        })
+
+        // save bookings in MongoDB
+        app.post('/bookings', async (req, res) => {
+            const booking = req.body;
+            // console.log(booking);
+            const result = await bookingsCollection.insertOne(booking);
+            res.send(result);
+        })
 
 
 
