@@ -43,12 +43,39 @@ async function run() {
                 $set: user
             }
             const result = await usersCollection.updateOne(query, updateDoc, options)
-            console.log(result)
+            // console.log(result)
             res.send(result)
         })
 
+        // get single user role
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        })
 
+        // save room in MongoDB
+        app.post('/rooms', async (req, res) => {
+            const room = req.body;
+            console.log(room);
+            const result = await roomsCollection.insertOne(room);
+            res.send(result);
+        })
 
+        // get All Rooms
+        app.get('/rooms', async (req, res) => {
+            const result = await roomsCollection.find().toArray();
+            res.send(result);
+        })
+
+        // get single room
+        app.get('/room/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await roomsCollection.findOne(query);
+            res.send(result);
+        })
 
 
 
