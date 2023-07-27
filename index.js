@@ -1,4 +1,5 @@
 const express = require('express')
+// const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 require('dotenv').config()
@@ -12,9 +13,11 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 app.use(express.json())
+// app.use(morgan('dev'))
 
 // =============== Mongo DB ==================
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
+const morgan = require('morgan')
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ufrxsge.mongodb.net/?retryWrites=true&w=majority`;
 
 
@@ -122,6 +125,17 @@ async function run() {
                 res.send([])
             }
             const query = { 'guest.email': email }
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // get bookings host by email
+        app.get('/bookings/host', async (req, res) => {
+            const email = req.query.email;
+            if (!email) {
+                res.send([])
+            }
+            const query = { host: email }
             const result = await bookingsCollection.find(query).toArray();
             res.send(result);
         })
