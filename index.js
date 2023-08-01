@@ -1,7 +1,8 @@
 const express = require('express')
-// const morgan = require('morgan')
+const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
+var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000
 
@@ -13,11 +14,10 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 app.use(express.json())
-// app.use(morgan('dev'))
+app.use(morgan('dev'))
 
 // =============== Mongo DB ==================
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
-const morgan = require('morgan')
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ufrxsge.mongodb.net/?retryWrites=true&w=majority`;
 
 
@@ -29,12 +29,39 @@ const client = new MongoClient(uri, {
     },
 })
 
+// verify JWT
+const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res
+            .status(401)
+            .send({ error: true, message: 'Unauthorized Access' })
+    }
+    const token = authorization.split(' ')[1]
+    // console.log(token)
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+            return res
+                .status(401)
+                .send({ error: true, message: 'Unauthorized Access' })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
 async function run() {
     try {
         const usersCollection = client.db('aircncDb').collection('users')
         const roomsCollection = client.db('aircncDb').collection('rooms')
         const bookingsCollection = client.db('aircncDb').collection('bookings')
 
+        // Generate jwt
+        app.post('/jwt', async (req, res) => {
+            const email = req.body;
+            const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' })
+            // console.log(token);
+            res.send({ token });
+        })
 
         // save user email and role in DB
         app.put('/users/:email', async (req, res) => {
@@ -81,15 +108,22 @@ async function run() {
         })
 
         // get rooms for host
-        app.get('/rooms/:email', async (req, res) => {
+        app.get('/rooms/:email', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            console.log(decodedEmail)
             const email = req.params.email;
-            const query = { 'host.email' : email };
+            if (email !== decodedEmail) {
+                return res
+                    .status(403)
+                    .send({ error: true, message: 'Forbidden Access' })
+            }
+            const query = { 'host.email': email };
             const result = await roomsCollection.find(query).toArray();
             res.send(result);
         })
 
-         // delete a room for host
-         app.delete('/rooms/:id', async (req, res) => {
+        // delete a room for host
+        app.delete('/rooms/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await roomsCollection.deleteOne(query);
