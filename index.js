@@ -5,6 +5,7 @@ const cors = require('cors')
 var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
+const nodemailer = require('nodemailer');
 const port = process.env.PORT || 5000
 
 // middleware
@@ -50,6 +51,35 @@ const verifyJWT = (req, res, next) => {
         next()
     })
 }
+
+// send mail function
+const sendMail = (emailData, emailAddress) => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL,
+            pass: process.env.PASS,
+        },
+    })
+
+    const mailOptions = {
+        from: process.env.EMAIL,
+        to: emailAddress,
+        subject: emailData.subject,
+        html: `<p>${emailData?.message}</p>`
+    }
+
+    transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+            // do something useful
+        }
+    })
+
+}
+
 async function run() {
     try {
         const usersCollection = client.db('aircncDb').collection('users')
@@ -167,6 +197,23 @@ async function run() {
             const booking = req.body;
             // console.log(booking);
             const result = await bookingsCollection.insertOne(booking);
+
+            // send confirmation email to guest
+            sendMail({
+                subject: 'Booking Successful!',
+                message: `Booking Id: ${result?.insertedId}, TransactionId: ${booking.transactionId}`
+            },
+                booking?.guest?.email
+            )
+
+            // send confirmation email to host
+            sendMail({
+                subject: 'Your Room Booked Successful!',
+                message: `Booking Id: ${result?.insertedId}, TransactionId: ${booking.transactionId}`
+            },
+                booking?.host
+            )
+
             res.send(result);
         })
 
