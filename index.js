@@ -141,6 +141,18 @@ async function run() {
             res.send(result);
         })
 
+        // update room in db
+        app.put('/rooms/:id', verifyJWT, async (req, res) => {
+            const room = req.body;
+            const filter = { _id: new ObjectId(req.params.id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: room,
+            }
+            const result = await roomsCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
         // get All Rooms
         app.get('/rooms', async (req, res) => {
             const result = await roomsCollection.find().toArray();
